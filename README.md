@@ -1,41 +1,92 @@
-
 # Arduino Temperature Monitoring API
 
-Aplicação em **Node.js** para receber dados de temperatura enviados por um Arduino pela porta serial, armazenar as medições no **MongoDB** e exibi-las em uma página HTML renderizada com **Express** e **EJS**.
+Sistema de monitoramento de temperatura que integra **Arduino**, **Node.js**, **MongoDB** e uma interface web renderizada com **Express** e **EJS**.
 
-O projeto foi desenvolvido com foco didático, buscando separar claramente as responsabilidades de conexão com o banco de dados, comunicação serial, models, rotas e interface.
+A aplicação recebe duas leituras de temperatura pela porta serial, valida os dados, registra uma sessão de coleta, persiste as medições no MongoDB e apresenta o histórico em uma tabela acessível pelo navegador.
 
 ---
 
-## Funcionalidades
+## Visão geral
+
+```text
+Sensores
+   ↓
+Arduino
+   ↓
+JSON pela porta serial
+   ↓
+Node.js + SerialPort
+   ↓
+Validação e persistência
+   ↓
+MongoDB + Mongoose
+   ↓
+Express + EJS
+   ↓
+Tabela de medições no navegador
+```
+
+Este projeto demonstra a integração entre **hardware, back-end, banco de dados e interface web** em uma aplicação modular e orientada a eventos.
+
+---
+
+## Principais funcionalidades
 
 - leitura de duas temperaturas enviadas pelo Arduino;
-- comunicação serial com a biblioteca `serialport`;
-- criação de uma sessão sempre que a porta serial é aberta;
-- armazenamento das medições no MongoDB;
+- recebimento dos dados em formato JSON pela porta serial;
+- validação das informações antes da persistência;
+- criação automática de uma sessão ao abrir a porta serial;
 - associação de cada medição à sessão correspondente;
-- consulta das medições por uma rota HTTP;
-- ordenação das medições da mais recente para a mais antiga;
-- renderização dos dados em uma tabela HTML com EJS;
-- encerramento organizado da porta serial e da conexão com o MongoDB.
+- armazenamento das leituras no MongoDB;
+- consulta ordenada das medições;
+- renderização dinâmica de uma tabela HTML com EJS;
+- encerramento organizado da porta serial e da conexão com o banco.
 
 ---
 
-## Tecnologias utilizadas
+## Desafios técnicos resolvidos
 
-- Arduino
-- C++
+- integração entre Arduino e Node.js por comunicação serial;
+- processamento assíncrono de eventos de abertura, leitura, erro e fechamento;
+- separação de responsabilidades em módulos;
+- modelagem de relacionamento entre sessões e medições;
+- validação de dados recebidos de um dispositivo externo;
+- persistência assíncrona com Mongoose;
+- renderização server-side com Express e EJS;
+- tratamento de encerramento da aplicação com `SIGINT`;
+- proteção de credenciais por variáveis de ambiente.
+
+---
+
+## Tecnologias
+
+### Back-end
+
 - Node.js
 - Express
 - EJS
-- MongoDB Atlas
 - Mongoose
 - SerialPort
 - dotenv
 
+### Banco de dados
+
+- MongoDB Atlas
+
+### Hardware
+
+- Arduino
+- sensores de temperatura
+- comunicação serial USB
+
+### Linguagens
+
+- JavaScript
+- C++
+
 ---
 
-## Arquitetura do projeto
+## Arquitetura
 
 ```text
 arduino-temperature-monitoring-api/
@@ -61,45 +112,73 @@ arduino-temperature-monitoring-api/
         └── medicoes.ejs
 ```
 
-### Responsabilidade de cada parte
-
-| Arquivo ou pasta | Responsabilidade |
+| Camada | Responsabilidade |
 |---|---|
-| `index.js` | Inicializa e encerra a aplicação |
-| `src/config` | Configuração da conexão com o MongoDB |
-| `src/express` | Registro das rotas HTTP |
-| `src/models` | Schemas e models do Mongoose |
-| `src/serial` | Comunicação com o Arduino pela porta serial |
-| `src/views` | Templates EJS renderizados pelo Express |
-| `arduino` | Código executado na placa Arduino |
+| `index.js` | Orquestra a inicialização e o encerramento da aplicação |
+| `src/config` | Centraliza a conexão com o MongoDB |
+| `src/express` | Registra as rotas HTTP |
+| `src/models` | Define os schemas e models do Mongoose |
+| `src/serial` | Gerencia a comunicação com o Arduino |
+| `src/views` | Contém os templates EJS |
+| `arduino` | Contém o código executado na placa |
 
 ---
 
-## Fluxo da aplicação
+## Fluxo de execução
+
+### Inicialização
 
 ```text
-Sensores de temperatura
-        ↓
-Arduino
-        ↓
-dados JSON pela porta serial
-        ↓
-SerialPort + ReadlineParser
-        ↓
-validação dos dados
-        ↓
-Mongoose
-        ↓
-MongoDB
-        ↓
-rota GET /medicoes
-        ↓
-EJS
-        ↓
-tabela HTML no navegador
+index.js
+   ↓
+carrega as variáveis de ambiente
+   ↓
+conecta ao MongoDB
+   ↓
+inicia o servidor Express
+   ↓
+abre a porta serial
+   ↓
+cria uma nova sessão
 ```
 
-O Arduino envia uma linha JSON semelhante a:
+### Registro de uma medição
+
+```text
+Arduino envia uma linha JSON
+   ↓
+ReadlineParser identifica a linha completa
+   ↓
+JSON.parse converte o texto em objeto
+   ↓
+os campos são validados
+   ↓
+Mongoose cria uma medição
+   ↓
+MongoDB armazena o documento
+```
+
+### Consulta pelo navegador
+
+```text
+GET /medicoes
+   ↓
+Medicao.find()
+   ↓
+ordenação por DataRegistro
+   ↓
+res.render()
+   ↓
+EJS percorre o array
+   ↓
+HTML final é enviado ao navegador
+```
+
+---
+
+## Formato dos dados enviados pelo Arduino
+
+O Arduino deve enviar uma linha JSON por leitura:
 
 ```json
 {
@@ -108,48 +187,75 @@ O Arduino envia uma linha JSON semelhante a:
 }
 ```
 
-O módulo serial interpreta essa linha, valida os valores e cria um documento na collection `medicoes`.
+Cada mensagem deve terminar com uma quebra de linha, pois o parser utiliza:
+
+```javascript
+delimiter: '\n'
+```
 
 ---
 
-## Pré-requisitos
+## Modelagem dos dados
 
-Antes de executar o projeto, instale:
+### Sessão
 
-- Node.js;
-- npm;
-- Arduino IDE;
+Representa um período de funcionamento da comunicação serial.
+
+Campos principais:
+
+```text
+usuario
+porta
+iniciadaEm
+encerradaEm
+```
+
+### Medição
+
+Representa uma leitura de temperatura.
+
+Campos principais:
+
+```text
+sessao
+temperatura1
+temperatura2
+DataRegistro
+```
+
+Cada medição possui uma referência para a sessão em que foi registrada.
+
+---
+
+## Como executar
+
+### Pré-requisitos
+
+- Node.js instalado;
+- npm instalado;
 - acesso a um banco MongoDB;
-- uma placa Arduino conectada ao computador;
-- sensores de temperatura compatíveis com o código Arduino.
+- Arduino conectado ao computador;
+- código Arduino carregado na placa.
 
----
-
-## Instalação
-
-Clone o repositório:
+### 1. Clonar o repositório
 
 ```bash
 git clone https://github.com/leandrogaldinodeoliveira/arduino-temperature-monitoring-api.git
 ```
 
-Entre na pasta:
-
 ```bash
 cd arduino-temperature-monitoring-api
 ```
 
-Instale as dependências:
+### 2. Instalar as dependências
 
 ```bash
 npm install
 ```
 
----
+### 3. Configurar as variáveis de ambiente
 
-## Configuração das variáveis de ambiente
-
-Crie um arquivo chamado `.env` na raiz do projeto:
+Crie um arquivo `.env` na raiz do projeto:
 
 ```env
 DB_CONNECTION=sua_string_de_conexao_com_o_mongodb
@@ -161,7 +267,7 @@ Exemplo de estrutura:
 DB_CONNECTION=mongodb+srv://USUARIO:SENHA@CLUSTER.mongodb.net/?appName=APLICACAO
 ```
 
-O arquivo `.env` contém credenciais privadas e não deve ser enviado ao GitHub.
+O arquivo `.env` não deve ser enviado ao GitHub.
 
 O `.gitignore` deve conter:
 
@@ -170,15 +276,13 @@ node_modules/
 .env
 ```
 
-O arquivo `.env.example` pode ser publicado sem credenciais reais:
+Um arquivo `.env.example` pode ser mantido no repositório:
 
 ```env
 DB_CONNECTION=sua_string_de_conexao_com_o_mongodb
 ```
 
----
-
-## Configuração da porta serial
+### 4. Configurar a porta serial
 
 No arquivo:
 
@@ -186,7 +290,7 @@ No arquivo:
 src/serial/serial.js
 ```
 
-ajuste a propriedade `path` para a porta utilizada pelo Arduino:
+ajuste a porta utilizada pelo Arduino:
 
 ```javascript
 const porta = new serialport.SerialPort({
@@ -196,96 +300,25 @@ const porta = new serialport.SerialPort({
 });
 ```
 
-No Windows, exemplos comuns são:
-
-```text
-COM3
-COM4
-COM5
-```
-
-A taxa `baudRate` deve ser igual à configurada no Arduino:
+A taxa de transmissão deve corresponder à configuração do Arduino:
 
 ```cpp
 Serial.begin(9600);
 ```
 
----
-
-## Execução
-
-Com o Arduino conectado e o código carregado na placa, execute:
+### 5. Iniciar a aplicação
 
 ```bash
 node index.js
 ```
 
-Caso exista um script `start` no `package.json`, também pode ser usado:
-
-```bash
-npm start
-```
-
-Quando a aplicação iniciar corretamente, o terminal deverá informar que:
-
-- a conexão com o MongoDB foi estabelecida;
-- o servidor Express está funcionando;
-- a porta serial foi aberta;
-- uma sessão foi criada.
-
----
-
-## Visualização das medições
+### 6. Acessar as medições
 
 Abra no navegador:
 
 ```text
 http://localhost:3000/medicoes
 ```
-
-A rota consulta o MongoDB e envia o array de medições para o template EJS:
-
-```javascript
-res.render('medicoes', {
-  medicoes
-});
-```
-
-No EJS, o array é percorrido com `forEach()`:
-
-```ejs
-<% medicoes.forEach((medicao) => { %>
-  <tr>
-    <td><%= new Date(medicao.DataRegistro).toLocaleString('pt-BR') %></td>
-    <td><%= medicao.temperatura1 %> °C</td>
-    <td><%= medicao.temperatura2 %> °C</td>
-  </tr>
-<% }); %>
-```
-
-O navegador recebe o HTML já renderizado com uma linha para cada documento encontrado no banco.
-
----
-
-## Models
-
-### Sessão
-
-Cada abertura da porta serial cria uma sessão com informações como:
-
-- usuário;
-- porta serial utilizada;
-- data e horário de início;
-- data e horário de encerramento.
-
-### Medição
-
-Cada medição contém:
-
-- referência à sessão;
-- temperatura 1;
-- temperatura 2;
-- data e horário do registro.
 
 ---
 
@@ -295,73 +328,146 @@ Cada medição contém:
 |---|---|---|
 | `GET` | `/medicoes` | Consulta as medições e renderiza a tabela HTML |
 
-Neste estágio, o projeto possui uma rota de leitura e ainda não implementa um CRUD REST completo.
+A rota executa uma consulta ao MongoDB:
+
+```javascript
+const medicoes = await Medicao.find()
+  .sort({
+    DataRegistro: -1
+  });
+```
+
+Depois envia o array ao template:
+
+```javascript
+res.render('medicoes', {
+  medicoes
+});
+```
+
+O EJS cria uma linha da tabela para cada documento:
+
+```ejs
+<% medicoes.forEach((medicao) => { %>
+  <tr>
+    <td>
+      <%= new Date(medicao.DataRegistro).toLocaleString('pt-BR') %>
+    </td>
+
+    <td>
+      <%= medicao.temperatura1 %> °C
+    </td>
+
+    <td>
+      <%= medicao.temperatura2 %> °C
+    </td>
+  </tr>
+<% }); %>
+```
 
 ---
 
-## Encerramento da aplicação
+## Encerramento seguro
 
-Ao pressionar:
-
-```text
-Ctrl + C
-```
-
-o Node.js recebe o sinal `SIGINT`.
+Ao pressionar `Ctrl + C`, o Node.js recebe o sinal `SIGINT`.
 
 A aplicação tenta:
 
 1. registrar o encerramento da sessão;
-2. fechar a porta serial;
-3. desconectar do MongoDB;
-4. encerrar o processo.
+2. salvar a sessão no MongoDB;
+3. fechar a porta serial;
+4. desconectar do banco;
+5. finalizar o processo.
+
+Esse fluxo reduz o risco de conexões abertas ou sessões incompletas.
 
 ---
 
-## Possíveis evoluções
+## Decisões de projeto
 
-- atualização da tabela em tempo real com Socket.IO;
-- gráficos de temperatura com Chart.js;
-- filtros por sessão e intervalo de datas;
-- paginação das medições;
-- rotas REST para criação, consulta, atualização e exclusão;
-- autenticação de usuários;
-- download das medições em CSV;
-- configuração da porta serial por variável de ambiente;
-- tratamento visual para ausência de medições;
-- publicação da aplicação em um servidor.
+### Separação por responsabilidade
 
----
+O `index.js` funciona apenas como orquestrador. A comunicação serial, as rotas, os models e a conexão com o banco ficam em módulos próprios.
 
-## Objetivo didático
+### Estado interno encapsulado
 
-Este projeto também funciona como estudo de integração entre diferentes partes de uma aplicação:
+O módulo serial mantém internamente objetos como a porta, o parser e a sessão atual. Apenas as funções necessárias são exportadas:
 
-```text
-hardware
-    ↓
-comunicação serial
-    ↓
-back-end
-    ↓
-banco de dados
-    ↓
-template no servidor
-    ↓
-navegador
+```javascript
+module.exports = {
+  iniciarSerial,
+  encerrarSerial
+};
 ```
 
-Ele permite estudar, em uma aplicação concreta:
+### Arquitetura orientada a eventos
 
-- módulos CommonJS;
-- escopo léxico e encapsulamento;
-- programação orientada a eventos;
-- callbacks;
-- operações assíncronas;
-- rotas Express;
-- Mongoose;
-- renderização EJS;
-- organização modular de projetos Node.js.
+A aplicação registra callbacks para os eventos:
+
+```text
+open
+data
+error
+close
+SIGINT
+```
+
+Isso permite que cada comportamento seja executado no momento adequado.
+
+---
+
+## Próximas evoluções
+
+- atualização em tempo real com Socket.IO;
+- gráficos dinâmicos com Chart.js;
+- filtros por data e sessão;
+- paginação dos registros;
+- download de dados em CSV;
+- configuração da porta serial pelo `.env`;
+- tratamento visual para banco vazio;
+- criação de uma API REST completa;
+- autenticação de usuários;
+- testes automatizados;
+- deploy da interface e da API.
+
+---
+
+## Competências demonstradas
+
+Este projeto evidencia conhecimentos em:
+
+- desenvolvimento back-end com Node.js;
+- rotas e renderização server-side com Express;
+- persistência de dados com MongoDB e Mongoose;
+- programação assíncrona;
+- arquitetura orientada a eventos;
+- comunicação serial;
+- integração entre hardware e software;
+- modularização e separação de responsabilidades;
+- modelagem de dados;
+- tratamento de erros;
+- segurança básica de credenciais;
+- organização e documentação de projetos.
+
+---
+
+## Status
+
+Projeto funcional em desenvolvimento.
+
+A versão atual realiza todo o fluxo principal:
+
+```text
+Arduino
+   ↓
+Node.js
+   ↓
+MongoDB
+   ↓
+EJS
+   ↓
+Navegador
+```
 
 ---
 
@@ -369,4 +475,4 @@ Ele permite estudar, em uma aplicação concreta:
 
 **Leandro Galdino de Oliveira**
 
-Projeto desenvolvido para estudo de Node.js, Express, MongoDB, comunicação serial e integração entre Arduino e aplicações web.
+Professor de Física em transição para desenvolvimento de software, com foco em back-end, integração de sistemas e aplicações educacionais.
