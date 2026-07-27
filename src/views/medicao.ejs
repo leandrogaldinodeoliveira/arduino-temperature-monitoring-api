@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Medições de Temperatura</title>
+
+  <style>
+    table {
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      border: 1px solid rgb(70, 69, 69);
+      padding: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Medições armazenadas</h1>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Data e horário</th>
+        <th>Temperatura 1</th>
+        <th>Temperatura 2</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      <% medidas.forEach((valor) => { %>
+
+        <tr>
+          <td>
+            <%= new Date(
+              valor.DataRegistro
+            ).toLocaleString('pt-BR') %>
+          </td>
+
+          <td>
+            <%= valor.temperatura1 %> °C
+          </td>
+
+          <td>
+            <%= valor.temperatura2 %> °C
+          </td>
+        </tr>
+
+      <% }); %>
+
+    </tbody>
+  </table>
+
+</body>
+
+</html>
