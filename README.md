@@ -1,4 +1,4 @@
-[README_arduino_temperature_monitoring_api.md](https://github.com/user-attachments/files/30421374/README_arduino_temperature_monitoring_api.md)
+
 # Arduino Temperature Monitoring API
 
 Aplicação em **Node.js** para receber dados de temperatura enviados por um Arduino pela porta serial, armazenar as medições no **MongoDB** e exibi-las em uma página HTML renderizada com **Express** e **EJS**.
