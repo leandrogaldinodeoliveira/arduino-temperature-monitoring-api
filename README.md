@@ -366,6 +366,11 @@ O EJS cria uma linha da tabela para cada documento:
 ```
 
 ---
+<img width="418" height="574" alt="image" src="https://github.com/user-attachments/assets/294f89b2-a508-4116-b025-2c9f8e4d9460" />
+
+Figura - Exemplo dos dados impressos no navegador.
+
+---
 
 ## Encerramento seguro
 
