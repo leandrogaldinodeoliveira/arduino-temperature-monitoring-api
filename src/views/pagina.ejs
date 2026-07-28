@@ -9,7 +9,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>Medições de Temperatura</title>
+  <title>Medicoes de Temperatura</title>
 
   <style>
     table {
@@ -26,8 +26,11 @@
 
 <body>
 
-  <h1>Medições armazenadas</h1>
-
+  <h1>Medicoes de Temperatura</h1>
+  <button id = "abrir" >Coletar Dados </button>
+  <button id = "parar" >Parar Coleta </button>
+  <p></p>
+  <p id = "status"> Aguardando </p>
   <table>
     <thead>
       <tr>
@@ -62,6 +65,28 @@
     </tbody>
   </table>
 
+
+ <script> 
+
+  const abrir = document.getElementById ('abrir');
+  const fechar = document.getElementById ('parar');
+  const Status = document.getElementById ('status')
+  
+  abrir.addEventListener('click', async()=>{
+  
+  await fetch ('/iniciar', {method: 'POST'})
+  Status.textContent = "Coletando dados"
+  
+  
+  })
+
+  fechar.addEventListener('click', async()=>{
+ 
+  await fetch ('/parar', {method: 'POST'})
+  Status.textContent = "Aguardando o Início"
+  })
+
+ </script> 
 </body>
 
 </html>
