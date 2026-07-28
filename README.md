@@ -102,14 +102,14 @@ arduino-temperature-monitoring-api/
     ├── config/
     │   └── dbConnect.js
     ├── express/
-    │   └── rota_medicao.js
+    │   └── routers.js
     ├── models/
     │   ├── medicao.js
     │   └── sessao.js
     ├── serial/
     │   └── serial.js
     └── views/
-        └── medicoes.ejs
+        └── pagina.ejs
 ```
 
 | Camada | Responsabilidade |
