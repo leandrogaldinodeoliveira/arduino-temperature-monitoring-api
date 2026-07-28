@@ -1,16 +1,14 @@
 require('dotenv').config();
-const express = require('express');
+
 const mongoose = require('mongoose');
 const conectaNaDatabase = require('./src/config/dbConnect');
-const rotas = require('./src/express/rota_medicao');
 const {iniciarSerial, encerrarSerial} = require('./src/serial/serial');
 
-const app = express();
+const app = require('./src/express/routers')
 const portExpress = 3000;
 
 app.set('view engine', 'ejs');
 app.set ('views', './src/views')
-rotas(app);
 
 async function iniciarAplicacao() {
   try {
@@ -27,7 +25,7 @@ async function iniciarAplicacao() {
 
   } catch (erro) {
     console.error(
-      'Não foi possível iniciar a aplicação:',
+      'Nao foi posssivel iniciar a aplicacao:',
       erro.message
     );
 
@@ -35,6 +33,27 @@ async function iniciarAplicacao() {
   }
 }
 
+async function encerrarAplicacao() {
+  try {
+    await encerrarSerial();
+    await mongoose.disconnect();
+
+    console.log('Aplicacao encerrada.');
+    process.exit(0);
+    
+  } catch (erro) {
+    console.error(
+      'Erro ao encerrar a aplicacao:',
+      erro.message
+    );
+
+    process.exit(1);
+  }
+}
+
+process.on('SIGINT', encerrarAplicacao);
+
+iniciarAplicacao();
 async function encerrarAplicacao() {
   try {
     await encerrarSerial();
