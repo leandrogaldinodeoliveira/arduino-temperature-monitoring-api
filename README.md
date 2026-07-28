@@ -317,7 +317,7 @@ node index.js
 Abra no navegador:
 
 ```text
-http://localhost:3000/medicoes
+http://localhost:3000/
 ```
 
 ---
@@ -326,7 +326,7 @@ http://localhost:3000/medicoes
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `GET` | `/medicoes` | Consulta as medições e renderiza a tabela HTML |
+| `GET` | `/` | Consulta as medições e renderiza a tabela HTML |
 
 A rota executa uma consulta ao MongoDB:
 
@@ -340,7 +340,7 @@ const medicoes = await Medicao.find()
 Depois envia o array ao template:
 
 ```javascript
-res.render('medicoes', {
+res.render('pagina', {
   medicoes
 });
 ```
