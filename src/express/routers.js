@@ -1,5 +1,10 @@
 const Medicao = require('../models/medicao');
 const app = require('express')();
+const mongoose = require('mongoose');
+const {iniciarSerial, encerrarSerial} = require ('../serial/serial')
+const conectaNaDatabase = require('../config/dbConnect');
+
+const portExpress = 3000;
 
   app.get('/', async (req, res) => {
     try {
@@ -24,5 +29,56 @@ const app = require('express')();
     }
   });
 
+  app.post('/iniciar',(req, res) =>{
+  
+  iniciarSerial ();
+  res.status(200).end();
+  
+ })
 
-module.exports = app;
+ app.post('/parar',(req, res) =>{
+  
+  encerrarAplicacao ();
+  res.status(200).end();
+ })
+
+async function iniciarAplicacao() {
+  try {
+   
+    await conectaNaDatabase();
+
+    app.listen(portExpress, () => {
+        console.log(
+        `Servidor Express funcionando em http://localhost:${portExpress}`
+      );
+    });
+
+   
+  } catch (erro) {
+    console.error(
+      'Não foi possível iniciar a aplicação:',
+      erro.message
+    );
+
+    
+  }
+}
+
+async function encerrarAplicacao() {
+  try {
+    await encerrarSerial();
+   
+      
+  } catch (erro) {
+    console.error(
+      'Erro ao encerrar a aplicação:',
+      erro.message
+    );
+
+    process.exit(1);
+  }
+}
+
+  
+
+module.exports = {app, iniciarAplicacao, encerrarAplicacao};
