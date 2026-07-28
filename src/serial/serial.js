@@ -111,14 +111,19 @@ porta.on('close', async () => {
 });
 
 function iniciarSerial() {
-  porta.open((err) => { //Se não houve erro: err == null
+  try{
+    
+    porta.open()
+    
+    
+  } catch (err) { //Se não houve erro: err == null
     if (err) {
       console.error(
         'Não foi possível abrir a porta:',
         err.message
       );
     }
-  });
+  };
 }
 
 async function encerrarSerial() {
